@@ -1,0 +1,351 @@
+<html>
+<head>
+<title>无标题文档</title>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+<link rel="stylesheet" type="text/css" href="Images/style.css">
+<SCRIPT language=javascript>
+	ThreeOhScroll.ie4mac = navigator.platform == "MacPPC" && navigator.appName == "Microsoft Internet Explorer" && !document.getElementById
+	ThreeOhScroll.mo5 = navigator.userAgent.indexOf("Gecko") != -1
+	ThreeOhScroll.aniLen = 1000
+	function ThreeOhScroll(id, clipH, thumbMax, arrowMax)
+	{
+		this.getMembers(ypGetElementById(id))
+
+		this.PTags		= ypGetDescendantsByTagName(this.content, "P")
+		var lastP		= this.PTags[this.PTags.length-1]
+		var lastPTop	= lastP.offsetTop - (ThreeOhScroll.mo5 ? 40 : 0)
+		this.docH		= lastPTop + Math.max(lastP.offsetHeight, clipH)
+		this.scrollH	= this.docH - clipH
+		this.clipH		= clipH
+		this.markersMax	= parseInt(this.markers.style.height) - 3
+		this.thumbMax	= parseInt(this.thumbContainer.style.height) - this.thumbImg.height
+		this.arrowMax	= parseInt(this.arrowContainer.style.height) - this.arrowImg.height
+		
+		this.gRef = "ThreeOhScroll_"+id
+		eval(this.gRef+"=this")
+		this.thumb.obj	= this
+		this.thumb.onmousedown = this.startDrag
+
+		this.initMarkers()
+	}
+
+	ThreeOhScroll.prototype.initMarkers = function() {
+		var shtml = "", sTitle, iTop
+		for (var i = 0; i < this.PTags.length; i++) {
+			sTitle	= this.PTags[i].getAttribute("description")
+			pTop	= this.PTags[i].offsetTop - (ThreeOhScroll.mo5 ? 40 : 0)
+			iTop	= Math.round(pTop * this.markersMax / this.scrollH)
+			if (sTitle && sTitle != "" && sTitle != null) {
+				shtml  += "<div style='position:absolute; left:0px; top:" + iTop + "px; "
+				shtml  += "cursor:pointer; cursor:hand; width:7px; height:7px;'" 
+				shtml  += "onmousedown='" + this.gRef + ".scrollTo(" + pTop + ")' "
+				shtml  += "onmouseover='" + this.gRef + ".toggleMarker(this, 1)' "
+				shtml  += "onmouseout='" + this.gRef + ".toggleMarker(this, 0)' "
+				shtml  += "description='" + sTitle.replace("'", "\'") + "'>"
+				shtml  += "<div style='position:absolute; left:1px; top:2px; width:5px; height:3px; clip:rect(0 5 3 0);  background-color:#999999;'></div></div>"
+			}
+		}
+		this.markers.innerHTML += shtml
+	}
+
+	ThreeOhScroll.prototype.getMembers = function(a) {
+		var c = a.childNodes ? a.childNodes : a.children, cn
+		if (c) {
+			for (var i = 0; i < c.length; i++) {
+				cn = c[i].className
+				if		(cn == "container")			this.container		= c[i]
+				else if	(cn == "content")			this.content		= c[i]
+				else if (cn == "markers")			this.markers		= c[i]
+				else if (cn == "thumb")				this.thumb			= c[i]
+				else if (cn == "arrow")				this.arrow			= c[i]
+				else if (cn == "skip")				this.skip			= c[i]
+				else if (cn == "thumbImg")			this.thumbImg		= c[i]
+				else if (cn == "arrowImg")			this.arrowImg		= c[i]
+				else if (cn == "thumbContainer")	this.thumbContainer	= c[i]
+				else if (cn == "arrowContainer")	this.arrowContainer = c[i]
+				else if (cn == "description")		this.description	= c[i]
+				else if (cn == "descArrow")			this.descArrow		= c[i]
+
+				if ((c[i].childNodes ? c[i].childNodes : c[i].children).length > 0)
+					this.getMembers(c[i])
+			}
+		}
+	}
+
+	ThreeOhScroll.prototype.startDrag = function(e) {
+		if (!e) e = window.event
+		var ey = e.pageY ? e.pageY : e.y
+		this.dragLastY = ey
+		this.dragStartOffset = ey - parseInt(this.style.top)
+		ThreeOhScroll.oldMouseMove = document.onmousemove
+		ThreeOhScroll.oldMouseUp = document.onmouseup
+		ThreeOhScroll.current = this.obj
+		document.onmousemove = this.obj.doDrag
+		document.onmouseup = this.obj.stopDrag
+		if (this.obj.aniTimer) window.clearInterval(this.obj.aniTimer)
+		return false;
+	}
+
+	ThreeOhScroll.prototype.doDrag = function(e) {
+		if (!e) e = window.event
+		var obj = ThreeOhScroll.current
+		var ey = (e.pageY ? e.pageY : e.y)
+		var dy = ey - obj.thumb.dragLastY
+		var ny = parseInt(obj.thumb.style.top) + dy
+		if (ny >= obj.thumbMax) obj.thumb.dragLastY = obj.thumbMax + obj.thumb.dragStartOffset
+
+		else if (ny < 0) obj.thumb.dragLastY = obj.thumb.dragStartOffset
+		else obj.thumb.dragLastY = ey
+		ny = Math.min(Math.max(ny, 0), obj.thumbMax)
+		obj.jumpTo(ny * obj.scrollH / obj.thumbMax)
+		return false;
+	}
+
+	ThreeOhScroll.prototype.stopDrag = function() {
+		this.onmousemove = ThreeOhScroll.oldMouseMove ? this.oldMouseMove : null
+		this.onmouseup   = ThreeOhScroll.oldMouseUp   ? this.oldMouseUp   : null
+	}
+
+	ThreeOhScroll.prototype.scrollTo = function(ny) {
+		this.endArrow = Math.round(ny * this.markersMax / this.scrollH)
+		this.startTime = (new Date()).getTime()
+		this.startPos = parseInt(this.content.style.top) * -1
+		this.endPos = ny
+		this.dist = this.endPos - this.startPos
+		this.accel = this.dist / ThreeOhScroll.aniLen / ThreeOhScroll.aniLen
+		if (this.aniTimer) this.aniTimer = window.clearInterval(this.aniTimer)
+		this.aniTimer = window.setInterval(this.gRef + ".scroll()", 10)
+	}
+
+	ThreeOhScroll.prototype.scroll = function() {
+		var now = (new Date()).getTime()
+		var elapsed = now - this.startTime
+		if (elapsed > ThreeOhScroll.aniLen) this.endScroll()
+		else {
+			var t = ThreeOhScroll.aniLen - elapsed
+			var ny = this.endPos - t * t * this.accel
+			this.jumpTo(ny)
+		}
+	}
+
+	ThreeOhScroll.prototype.endScroll = function() {
+		this.jumpTo(this.endPos)
+		this.arrow.style.top = this.endArrow
+		this.aniTimer = window.clearInterval(this.aniTimer)
+	}
+
+	ThreeOhScroll.prototype.jumpTo = function(ny) {
+		this.thumb.style.top	= Math.round(ny * this.thumbMax / this.scrollH)
+		this.arrow.style.top	= Math.round(ny * this.arrowMax / this.scrollH)
+		this.content.style.top	= -ny
+	}
+
+	ThreeOhScroll.prototype.toggleMarker = function(oMarker, bOn) {
+		if (bOn) {
+			ypGetChildNodes(oMarker)[0].style.backgroundColor = "#000000" 
+			if (this.curMarker) this.toggleMarker(this.curMarker, 0)
+			this.curMarker = oMarker
+			this.description.style.left = "-400px"
+			this.description.style.top = "-400px"
+			this.descArrow.style.top = parseInt(oMarker.style.top) + 2 + "px"
+			this.description.innerHTML = oMarker.getAttribute("description").replace("\'", "'")
+			var w = this.description.offsetWidth
+			this.description.style.left = (ThreeOhScroll.ie4mac ? 222 : 225) - w + "px"
+			this.description.style.top = parseInt(oMarker.style.top) - 1 + "px"
+			this.description.style.visibility = "visible"
+			this.descArrow.style.visibility = "visible"
+		} else {
+			ypGetChildNodes(oMarker)[0].style.backgroundColor = "#999999" 
+			this.curMarker = 0
+			this.description.style.visibility = "hidden"
+			this.descArrow.style.visibility = "hidden"
+		}
+	}
+
+
+	
+	function ypGetElementById(s) {
+		return (document.getElementById ? document.getElementById(s) : document.all[s])
+	}
+	function ypGetDescendantsByTagName(a, s) {
+		return (a.getElementsByTagName ? a.getElementsByTagName(s) : a.all.tags(s))
+	}
+	function ypGetChildNodes(objParent) {
+		return (objParent.childNodes ? objParent.childNodes : objParent.children)
+	}
+
+
+	function dbgListObjProps(obj) {
+		var w = window.open("","","width=400,height=300,resizable")
+		w.document.open()
+		w.document.write("<textarea style='position:absolute; width:90%; height:90%;'>")
+		for (prop in obj) w.document.write(prop + " : " + obj[prop] + "\n")
+		w.document.write("</textarea>")
+		w.document.close()
+		w.focus()
+	}
+</SCRIPT>
+<SCRIPT language=JavaScript>
+nereidFadeObjects = new Object();
+nereidFadeTimers = new Object();
+function nereidFade(object, destOp, rate, delta){
+if (!document.all)
+return
+    if (object != "[object]"){  //do this so I can take a string too
+        setTimeout("nereidFade("+object+","+destOp+","+rate+","+delta+")",0);
+        return;
+    }
+    clearTimeout(nereidFadeTimers[object.sourceIndex]);
+    diff = destOp-object.filters.alpha.opacity;
+    direction = 1;
+    if (object.filters.alpha.opacity > destOp){
+        direction = -1;
+    }
+    delta=Math.min(direction*diff,delta);
+    object.filters.alpha.opacity+=direction*delta;
+    if (object.filters.alpha.opacity != destOp){
+        nereidFadeObjects[object.sourceIndex]=object;
+        nereidFadeTimers[object.sourceIndex]=setTimeout("nereidFade(nereidFadeObjects["+object.sourceIndex+"],"+destOp+","+rate+","+delta+")",rate);
+    }
+}
+</SCRIPT>
+<script language="JavaScript">
+<!--
+
+<!--
+function MM_reloadPage(init) {  //reloads the window if Nav4 resized
+  if (init==true) with (navigator) {if ((appName=="Netscape")&&(parseInt(appVersion)==4)) {
+    document.MM_pgW=innerWidth; document.MM_pgH=innerHeight; onresize=MM_reloadPage; }}
+  else if (innerWidth!=document.MM_pgW || innerHeight!=document.MM_pgH) location.reload();
+}
+MM_reloadPage(true);
+// -->
+//-->
+</script>
+<SCRIPT LANGUAGE="JavaScript">
+<!-- // RightClickMenu
+
+function showmenuie5(){
+		var rightedge=document.body.clientWidth-event.clientX
+		var bottomedge=document.body.clientHeight-event.clientY
+		if (rightedge<ie5menu.offsetWidth)
+			ie5menu.style.left=document.body.scrollLeft+event.clientX-ie5menu.offsetWidth
+		else
+			ie5menu.style.left=document.body.scrollLeft+event.clientX
+		if (bottomedge<ie5menu.offsetHeight)
+			ie5menu.style.top=document.body.scrollTop+event.clientY-ie5menu.offsetHeight
+		else
+			ie5menu.style.top=document.body.scrollTop+event.clientY
+		ie5menu.style.visibility="visible"
+		return false
+}
+function hidemenuie5(){
+		ie5menu.style.visibility="hidden"
+}
+function highlightie5(){
+		if (event.srcElement.className=="menuitems"){
+			event.srcElement.style.backgroundColor="highlight"
+			event.srcElement.style.color="#ffffff"
+		}
+}
+function lowlightie5(){
+		if (event.srcElement.className=="menuitems"){
+			event.srcElement.style.backgroundColor=""
+			event.srcElement.style.color="#936067"
+		}
+} 
+function jumptoie5(){
+		if (event.srcElement.className=="menuitems"){
+			if (event.srcElement.url != ''){
+				if (event.srcElement.getAttribute("target")!=null)
+					window.open(event.srcElement.url,event.srcElement.getAttribute("target"))
+				else
+					window.location=event.srcElement.url
+			}
+		}
+}
+// -->
+</SCRIPT>
+<style type="text/css">
+<!--
+.STYLE1 {color: #984630}
+-->
+</style>
+</head>
+<NOSCRIPT><IFRAME SRC=*.htm></IFRAME></NOSCRIPT>
+<body bgcolor="#EFEBDB" background="Images/gk_r2_c3.png" text="#000000" topmargin="0" leftmargin="0" marginheight="0" marginwidth="0" style=overflow-X:hidden oncontextmenu="window.event.returnValue=false" onselectstart="event.returnValue=false" ondragstart="window.event.returnValue=false">
+<META content="MSHTML 6.00.2600.0" name=GENERATOR>
+<DIV id=Layer2 
+style="Z-INDEX: 16; LEFT: 0px; WIDTH: 41px; POSITION: absolute; TOP: 0px; HEIGHT: 498px">
+<DIV class=ThreeOhScroll id=externals 
+style="LEFT: 0px; WIDTH: 238px; POSITION: absolute; TOP: 0px">
+<DIV class=scrollBar 
+style="LEFT: 0px; WIDTH: 23px; POSITION: absolute; HEIGHT: 498px; top: 0px">
+  <DIV class=thumbContainer 
+style="LEFT: 0px; WIDTH: 9px; POSITION: absolute; TOP: 0px; HEIGHT: 480px">
+    <DIV class=thumb 
+style="WIDTH: 8px; CURSOR: hand; POSITION: absolute; TOP: 0px; HEIGHT: 498px; left: 468px"><IMG 
+class=thumbImg height=24 src="Images/bar.gif" width=7></DIV>
+  </DIV>
+  <DIV class=arrowContainer 
+style="WIDTH: 13px; POSITION: absolute; TOP: 0px; HEIGHT: 263px; left: 0px">
+    <DIV class=arrow 
+style="LEFT: 34px; WIDTH: 3px; POSITION: absolute; HEIGHT: 7px; top: -19px"><IMG 
+class=arrowImg height=7 src="img/arw.gif" width=4></DIV>
+  </DIV>
+  <DIV class=markers 
+style="WIDTH: 7px; POSITION: absolute; TOP: 0px; HEIGHT: 300px; left: -43px"></DIV>
+</DIV>
+<DIV class=description 
+style="BORDER-RIGHT: #999999 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #999999 1px solid; PADDING-LEFT: 0px; FONT-SIZE: 9px; Z-INDEX: 3; VISIBILITY: hidden; PADDING-BOTTOM: 1px; BORDER-LEFT: #999999 1px solid; COLOR: #000000; PADDING-TOP: 2px; BORDER-BOTTOM: #999999 1px solid; FONT-FAMILY: geneva, tahoma, arial; POSITION: absolute; BACKGROUND-COLOR: #ffffff"></DIV>
+<DIV class=descArrow 
+style="Z-INDEX: 4; LEFT: 224px; VISIBILITY: hidden; POSITION: absolute; TOP: 0px"></DIV>
+<DIV class=container 
+style="LEFT: 0px; OVERFLOW: hidden; WIDTH: 475px; POSITION: absolute; TOP: 2px; HEIGHT: 498px">
+<DIV class=content 
+style="LEFT: 0px; WIDTH: 465px; POSITION: absolute; TOP: 2px; HEIGHT: 498px">
+  <P>
+  <table width="457" border="0" cellpadding="0" cellspacing="0">
+    <tr>
+      <td  valign="left"><p class="03"><strong>故事：</strong> <BR>
+          <span class="STYLE1">年轻军官许文强被日军追杀堕海，漂浮到上海滩岸上，幸得丁力相救，不打不相识下结为好友。上海大亨冯敬尧利用二人铲除阻碍他的势力，二人更爱上冯之女儿程程。程程只钟爱强，但又怕拒绝力而伤他自尊，后来强发现当日陷害他及同胞的幕后黑手乃汉奸冯，强将冯杀死为同胞报仇，程程不堪打击成一疯妇，力知道后痛不已，誓要找出强一决生死。</span><br>
+        </p>
+        <div align="right" class="03">故事情节·21CN-LIFE [2005.12.10]</div>
+        </p>
+        <strong>评论：</strong> <BR>
+        <BR>
+        <span class="STYLE1">新观点一 <BR>
+        <BR>
+        </span>
+        <TABLE align="left">
+          <TBODY>
+            <TR>
+              <TD class="STYLE1"><IMG src="Images/zs.jpg" width="250" height="160" border="1" align="left"></TD>
+            </TR>
+            <TR>
+              <TD align="middle" class="STYLE1"></TD>
+            </TR>
+          </TBODY>
+        </TABLE>
+        <span class="STYLE1">《上海滩》由徐克监制、潘文杰导演，剧情虽借用由周润发、赵雅芝主演，轰动一时的上海滩连续剧，却藉英雄片的母题，反映了九○年代香港的政治潜意识。在《新上海滩》中，原本的配角丁力，取代许文强成为主角，可以看出不同的时代有不同的英雄形象。张国荣饰演的许文强，虽然在《新》片中具有革命党的身分，但他所代表的反倒是无家漂泊的流浪英雄，而且加入了颓废的末日魅力，叼烟、眼神的片段酷似王家卫的「阿飞正传」。而刘德华扮演的丁力，是近几年来一再被塑造成英雄典型，他从倒尿的混混因为敢冲而变老大，最后在江湖争执中丧命、失去所爱。这个类型的英雄从一无所有，到拥有权力、死亡，正影射着香港迈向繁华时，将面临中国接收的恐怖与感叹的情绪。力争上游的丁力和为民族复仇、逃亡的许文强即因男性情谊合作，又因爱情对立，这两种英雄代表了现实与理想中价值的纠葛与矛盾。讽刺的是，他们都在民族主义的意识型态对立下被杀死。 <BR>
+        <BR>
+        《新上海滩》莫名其妙地加入了「台湾民族同盟会」与日本侵华的抗争却未交代清楚，反而被凸显的是，江湖乱世的恩怨，扼杀了个人追求真爱的可能。丁力说：「我烂命一条，无所谓   。」许文强说：「对上海而言，我祇是过客。」《新》片借了上海的十里洋场，说香港的悲哀。 <BR>
+        由宁静演的女主角冯程程，在汉奸家世与命运偶然中挣扎，却无力反抗而发疯，她说：「我改变不了周围的一切，又逃不出去，好恨自己。」《新上海滩》用快节奏、三段式多重叙述、加入性爱片段等方式，营造出浓厚强烈的冲突。反抗被当成工具的丁力、漂泊为大义牺牲情感的许文强、单纯却受伤的冯程程，都祇是九七前香港政治文化潜意识的不同面向，成为新版歌词中的「一浪一浪奇谈」，却断送了梦想。剧终丁力死亡前在雪地上大量吐血的特写和片尾蒙蒙的上海市景，是香港电影发出的深沉悲伤与凭吊。 <BR>
+        <BR>
+        观点二 <BR>
+        <BR>
+        说上海滩是冒险家的天堂。 <BR>
+        <BR>
+        八○年代初港人把许文强这样一个混迹十里洋场，却又困于情的冒险家生动地搬上电视屏幕，推出二十集的《上海滩》剧集，风靡当年许多台湾的「第四台」及录像带观众，对当时的观影文化造成不小的影响，不少从未学过广东话的观众却都能唱《上海滩》标准粤语版主题曲。而早在周润发因为《英雄本色》的小马哥一角纵横影坛前，《上海滩》的许文强已经是不少台湾观众心目中「最有风采的英雄」，把《上海滩》归称是八○年代录像带族群的共同回忆应该是不算夸张的。今年香港人在港片历经了英雄片巅峰后重新改编《上海滩》，搬出两大天王：刘德华VS.张国荣，再挂上徐克的大名，为求再现黄浦滩头三○年代风华，还斥资搭建出一条南京路（据说现在的南京路已是高楼云集了），号称是「最精采的一场英雄争霸」，这样一出戏注定要吸引老《上海滩》迷躬临盛会，当然也少不了让人拿新旧版本来比较。新版本里的最大改变当然是男主角变成了丁力（刘德华饰），不过这并不是什么令人难以忍受的改变，当年的丁力原本即是许文强的另一版本，是在上海滩头浪里打滚求发展的另一个冒险者。但是旧版《上海滩》成功之处，是在于它将剧中貌似英雄的各路人马，融混入上海这个华洋杂处的冒险家天堂，不论是卷入两派争斗、无从脱身的许文强或是老大一方、奸恶无情的冯敬尧，这些人物的成败起伏，无非是藉以掌握上海氛围的样貌组合，正如《上海滩》主题曲中所论：「成功、失败，浪里分不清有没有」，可是《新上海滩》所要谈的恐怕不祇是这些（或者根本不是）。首先，原本浪荡子出身的许文强摇身一变成了「台湾民主同盟会」的革命分子，撇开三○年代的台湾不可能有以民主自称的革命运动不说，这位革命青年（张国荣饰），似乎是以革命之名，另行颓废之实，他与冯程程的一段爱情既火辣又虚无，让人误以为看到《阿飞正传》了。而原本在《上海滩》中清纯怀抱理想的冯程程，到了《新上海滩》也加快现代化脚步，成了新恶女，这个角色在两大英雄环伺下祇好变成举足轻重的新配角，当年许文强、冯程程间教人荡气回肠的爱情，也祇好草草   收场。于是在卡司强大的新上海滩中，我们看到编剧在强化两位英雄拔枪浴血、患难与共的新尝试，却也不能不看到大量情节与三○年代上海脱节，兄弟情义陈腔滥调的重新涌现。而上海这个冒险家的天堂，便祇能沦为英雄片的大背景，作为一名观众，真可谓梦断黄浦滩头了。</span> <BR>
+        <BR>
+        <br>
+        <div align="right" class="03"> [公元二零零五年十二月&nbsp;&nbsp;By  kenneth]</div>
+        </p>
+  </table>
+</DIV>
+<SCRIPT language=javascript>new ThreeOhScroll("externals", 265)</SCRIPT>
+</td>
+</tr>
+</table>
+</body>
+</html>

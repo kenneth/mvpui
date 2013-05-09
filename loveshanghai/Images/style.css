@@ -1,0 +1,42 @@
+BODY {margin: 0pt; font-size:9pt} 
+.03 {
+	font-family: "ÐÂËÎÌå";
+	font-size: 12.7px;
+	line-height: 20px;
+    text-decoration: none;
+	color: #000000;
+}
+A:link {
+	color: #000000; CURSOR: absolute; TEXT-DECORATION: none
+}
+A:active {
+	color: #000000; CURSOR: absolute; TEXT-DECORATION: none
+}
+A:visited {
+	color: #000000; CURSOR: absolute; TEXT-DECORATION: none
+}
+A:hover {
+	color: #000000; CURSOR: absolute; TEXT-DECORATION: none
+}
+tr {font-size:9pt; font-family: "Verdana", "ËÎÌå", "Arial", "Tahoma"}  
+table { line-height: 18px }
+.unnamed2 {  border-color: #7B5391 ; border-style: dashed; border-top-width: 0px; border-right-width: 1px; border-bottom-width: 0px; border-left-width: 0px}
+.unnamed3 {  border-color: #7B5391; border-style: dashed; border-top-width: 0px; border-right-width: 0px; border-bottom-width: 0px; border-left-width: 1px}
+
+   .cMenu{
+   position: absolute;
+   visibility:hidden;
+   color:#000000;
+   cursor: default;
+   font: normal 12px/20px "menutext";
+   width: 165px;
+   background-color: menu;
+   border: 1 solid buttonface;
+   border: 2 outset buttonhighlight;
+   border:1px solid #333333;
+   background-color:#ffffff;?, StartY=4, FinishX=75, FinishY=84)}
+
+.menuitems{
+   padding-left:15px;
+   padding-right:10px;
+}
